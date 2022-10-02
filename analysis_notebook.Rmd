@@ -135,8 +135,73 @@ Then we combine the two datasets together into one:
 wheel_tidy = bind_rows(mr_trash_wheel_sheet, prof_trash_wheel_sheet)
 wheel_tidy
 ```
-Here is a summary of the merged dataset:
+Here is a summary of the merged dataset: It has `r nrow(wheel_tidy)` observations and `r ncol(wheel_tidy)` variables. The variables include the attributes of the trash collected by each dumpster in Mr. Trash Wheel and Professor Trash Wheel. These attributes include weight in tons, volume in cubic yards, number of plastic bottles collected, number of polystyrene containers collected, number of cigarette butts collected, number of glass bottles collected, number of grocery bags collected, number of chip bags collected, number of sports balls collected, and number of homes powered by the trash collected by the dumpster on the recorded date. The recorded dates for dumpsters in Mr. Trash Wheel ranges from `r wheel_tidy %>% filter(which_wheel=="mr") %>% slice_head() %>% select(date) ` to `r wheel_tidy %>% filter(which_wheel=="mr") %>% slice_tail() %>% select(date)`, while for Professor Trash Wheel, they range from `r wheel_tidy %>% filter(which_wheel=="prof") %>% slice_head() %>% select(date)` to `r wheel_tidy %>% filter(which_wheel=="prof") %>% slice_tail() %>% select(date)`. 
+
+For the available data, Professor Trash Wheel collected `r wheel_tidy %>% filter(which_wheel=="prof") %>% summarize(sum(weight_tons))` tons of trash in total. In 2020, Mr. Trash Wheel collected `r wheel_tidy %>% filter(which_wheel=="mr", year==2020) %>% summarize(sum(sports_balls))` sports balls in total. 
 
 ### Problem 3
+
+First, import and clean the pols-month.csv data:
+```{r}
+pols_month_data = read_csv("data/fivethirtyeight_datasets/pols-month.csv") %>%
+  separate(col = mon, into = c("year", "month", "day"), sep = "-") %>% # separate the mon variable into three variables
+  mutate(year = as.integer(year), 
+         month = month.abb[as.integer(month)], 
+         day = as.integer(day)) %>% # convert year and day to integer; convert month to month names
+  pivot_longer(cols = c(prez_gop, prez_dem),
+               names_to = "president",
+               values_to = "which_party") %>% # transform prez_gop and prez_dem into new variables president and which_party
+  filter(which_party==1) %>% # delete duplicate rows resulted from the pivot_longer() operation, which contains information on to which party the president does NOT belong 
+  mutate(president = recode(president, "prez_dem" = "dem", "prez_gop" = "gop")) %>% # recode the president variable
+  select(-c(which_party, day)) # remove extra variables
+  
+pols_month_data
+```
+
+Next, import and clean the snp.csv data:
+```{r}
+snp_data = read_csv("data/fivethirtyeight_datasets/snp.csv") %>%
+  separate(col = date, into = c("month", "day", "year"), sep = "/") %>%
+  mutate(year = as.integer(year), 
+         month = month.abb[as.integer(month)], 
+         day = as.integer(day)) %>%
+  mutate(year = case_when(year %in% seq(0, 15) ~ year + 2000,
+                          year %in% seq(50, 99) ~ year + 1900)) %>% # convert two-digit year to 4-digit year
+  relocate(year) %>% # make year and month the first and secone column
+  select(-day) # remove the day variable as in the previous dataset
+  
+snp_data
+```
+
+Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
+```{r}
+unemployment_data = read_csv("data/fivethirtyeight_datasets/unemployment.csv") %>%
+  pivot_longer(cols = Jan:Dec,
+               names_to = "month",
+               values_to = "unemployment_rate_%") 
+
+unemployment_data
+```
+
+Join the datasets by merging the snp data into the pols data, and merging the unemployment data into the result.
+```{r}
+merged_pol_snp_data = left_join(pols_month_data, snp_data, by=c("year"="year", "month"="month"))
+merged_pol_snp_unemploymemt_data = left_join(merged_pol_snp_data, unemployment_data, by = c("year"="Year", "month"="month"))
+
+merged_pol_snp_unemploymemt_data
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
