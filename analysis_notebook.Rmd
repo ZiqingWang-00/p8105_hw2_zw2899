@@ -1,0 +1,142 @@
+---
+title: "p8105_hw2_zw2899"
+author: "Ziqing Wang"
+date: "2022-10-02"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, message = FALSE)
+```
+
+```{r load_libraries}
+library(tidyverse)
+library(readxl)
+```
+
+### Problem 1 (Posted solutions)
+
+Below we import and clean data from `NYC_Transit_Subway_Entrance_And_Exit_Data.csv`. The process begins with data import, updates variable names, and selects the columns that will be used in later parts fo this problem. We update `entry` from `yes` / `no` to a logical variable. As part of data import, we specify that `Route` columns 8-11 should be character for consistency with 1-7.
+
+```{r}
+trans_ent = 
+  read_csv(
+    "data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
+  janitor::clean_names() %>% 
+  select(
+    line, station_name, station_latitude, station_longitude, 
+    starts_with("route"), entry, exit_only, vending, entrance_type, 
+    ada) %>% 
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
+```
+
+As it stands, these data are not "tidy": route number should be a variable, as should route. That is, to obtain a tidy dataset we would need to convert `route` variables from wide to long format. This will be useful when focusing on specific routes, but may not be necessary when considering questions that focus on station-level variables. 
+
+The following code chunk selects station name and line, and then uses `distinct()` to obtain all unique combinations. As a result, the number of rows in this dataset is the number of unique stations.
+
+```{r}
+trans_ent %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+The next code chunk is similar, but filters according to ADA compliance as an initial step. This produces a dataframe in which the number of rows is the number of ADA compliant stations. 
+
+```{r}
+trans_ent %>% 
+  filter(ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+To compute the proportion of station entrances / exits without vending allow entrance, we first exclude station entrances that do not allow vending. Then, we focus on the `entry` variable -- this logical, so taking the mean will produce the desired proportion (recall that R will coerce logical to numeric in cases like this).
+
+```{r}
+trans_ent %>% 
+  filter(vending == "NO") %>% 
+  pull(entry) %>% 
+  mean
+```
+
+Lastly, we write a code chunk to identify stations that serve the A train, and to assess how many of these are ADA compliant. As a first step, we tidy the data as alluded to previously; that is, we convert `route` from wide to long format. After this step, we can use tools from previous parts of the question (filtering to focus on the A train, and on ADA compliance; selecting and using `distinct` to obtain dataframes with the required stations in rows).
+
+```{r}
+trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
+
+trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+
+
+### Problem 2
+
+First, we import and clean the Mr. Trash Wheel dataset:
+```{r}
+mr_trash_wheel_sheet = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+                            sheet = "Mr. Trash Wheel", skip = 1) %>% # skip the row that contains figure
+  janitor::clean_names() %>%
+  drop_na(c("dumpster")) %>% # drop the rows that computes monthly totals
+  slice(1:(n()-1)) %>% # drop the last row, which computes the grand total
+  select(-c(x15, x16, x17))%>%# drop the columns that contain notes
+  mutate(sports_balls = as.integer(sports_balls),
+         which_wheel = "mr") # round sports balls to the nearest integer and create new variable to note the dumpsters are from mr. trash wheel 
+
+mr_trash_wheel_sheet
+```
+
+Next, we import and clean the Professor Trash Wheel data:
+```{r}
+prof_trash_wheel_sheet = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+                            sheet = "Professor Trash Wheel", skip = 1) %>%  # skip the row that contains figure
+  janitor::clean_names() %>%
+  drop_na(c("dumpster")) %>% # drop the rows that computes monthly/grand totals
+  mutate(sports_balls = as.integer(sports_balls),
+         which_wheel = "prof") # round sports balls to the nearest integer and create a new variable to note that these dumpsters are from professor trash wheel
+
+
+prof_trash_wheel_sheet
+```
+
+Before combining the two datasets by rows, we check the names and data types of the columns of the two datasets:
+```{r}
+# the datasets have the same column names if there sets of column names contain each other
+FALSE %in% (names(mr_trash_wheel_sheet) %in% names(prof_trash_wheel_sheet))
+FALSE %in% (names(prof_trash_wheel_sheet) %in% names(mr_trash_wheel_sheet))
+```
+We can see from the checks above that the two datasets inded have the same column names.  
+
+Nest, we check if the variables in the two datasets have the same data type before merging:
+```{r}
+glimpse(mr_trash_wheel_sheet)
+glimpse(prof_trash_wheel_sheet)
+```
+We found an inconsistency where in the first dataset, the dumpster variable was encoded as a character, while in the second dataset, the dumpster variable was ended as a double. We convert the dumpster variable in the first dataset into a double:
+```{r}
+mr_trash_wheel_sheet = mr_trash_wheel_sheet %>% mutate(dumpster = as.numeric(dumpster))
+```
+
+Then we combine the two datasets together into one:
+```{r}
+wheel_tidy = bind_rows(mr_trash_wheel_sheet, prof_trash_wheel_sheet)
+wheel_tidy
+```
+Here is a summary of the merged dataset:
+
+### Problem 3
+
+
