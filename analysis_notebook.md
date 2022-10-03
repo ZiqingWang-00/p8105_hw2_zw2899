@@ -366,6 +366,13 @@ pols_month_data
 ## # … with 807 more rows
 ```
 
+The above dataset has 817 observations and 9 variables. It contains the
+“demographics” of the US government every month from 1947 to 2015.
+Specifically, the variables include the number of governors, senators,
+and representatives in the republican and democratic party,
+respectively. It also records whether the president in that month & year
+is in the republican or democratic party.
+
 Next, import and clean the snp.csv data:
 
 ``` r
@@ -377,7 +384,7 @@ snp_data = read_csv("data/fivethirtyeight_datasets/snp.csv") %>%
   mutate(year = case_when(year %in% seq(0, 15) ~ year + 2000,
                           year %in% seq(50, 99) ~ year + 1900)) %>% # convert two-digit year to 4-digit year
   relocate(year) %>% # make year and month the first and secone column
-  select(-day) # remove the day variable as in the previous dataset
+  select(-c(day)) # remove the day variable for consistency
   
 snp_data
 ## # A tibble: 787 × 3
@@ -395,6 +402,11 @@ snp_data
 ## 10  2014 Oct   2018.
 ## # … with 777 more rows
 ```
+
+The above dataset has 787 observations and 3 variables. It records the
+closing values of the S&P stock index on one date at the beginning of
+each month from 1950 to 2015 (the day variable was removed to be
+consistent with the other two datasets for future merging).
 
 Third, tidy the unemployment data so that it can be merged with the
 previous datasets. This process will involve switching from “wide” to
@@ -424,6 +436,9 @@ unemployment_data
 ## # … with 806 more rows
 ```
 
+The above dataset has 816 observations and 3 variables. It records the
+monthly unemployment rate (%) from 1948 to 2015.
+
 Join the datasets by merging the snp data into the pols data, and
 merging the unemployment data into the result.
 
@@ -447,3 +462,11 @@ merged_pol_snp_unemploymemt_data
 ## 10  1947 Oct        23      51     253      23      45     198 dem          NA
 ## # … with 807 more rows, and 1 more variable: `unemployment_rate_%` <dbl>
 ```
+
+The above dataset was created by first left join the pols_month_data and
+the snp_data by year and month, then left join the aforementioned
+dataset and unemployment_data by year and month again. The final dataset
+consists of 817 observations, which equals to the number of observations
+in pols_month_data, and 11 variables. The final dataset now contains the
+variables in all of the pol_month_data, snp_data, and umemployment_data
+datasets.
