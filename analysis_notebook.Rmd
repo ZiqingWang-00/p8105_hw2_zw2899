@@ -87,47 +87,39 @@ trans_ent %>%
 
 First, we import and clean the Mr. Trash Wheel dataset:
 ```{r}
-mr_trash_wheel_sheet = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+mr_trash_wheel_sheet = read_excel("data/TrashWheelCollectionData.xlsx", 
                             sheet = "Mr. Trash Wheel", skip = 1) %>% # skip the row that contains figure
   janitor::clean_names() %>%
   drop_na(c("dumpster")) %>% # drop the rows that computes monthly totals
   slice(1:(n()-1)) %>% # drop the last row, which computes the grand total
-  select(-c(x15, x16, x17))%>%# drop the columns that contain notes
+  select(-c(x15, x16))%>% # drop the columns that are blank
   mutate(sports_balls = as.integer(sports_balls),
          which_wheel = "mr") # round sports balls to the nearest integer and create new variable to note the dumpsters are from mr. trash wheel 
 
 mr_trash_wheel_sheet
 ```
 
-Next, we import and clean the Professor Trash Wheel data:
+Next, we import and clean the Professor Trash Wheel data (there is no sports ball variable in this sheet in the updated dataset):
 ```{r}
-prof_trash_wheel_sheet = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+prof_trash_wheel_sheet = read_excel("data/TrashWheelCollectionData.xlsx", 
                             sheet = "Professor Trash Wheel", skip = 1) %>%  # skip the row that contains figure
   janitor::clean_names() %>%
   drop_na(c("dumpster")) %>% # drop the rows that computes monthly/grand totals
-  mutate(sports_balls = as.integer(sports_balls),
-         which_wheel = "prof") # round sports balls to the nearest integer and create a new variable to note that these dumpsters are from professor trash wheel
+  mutate(sports_balls = NA, # create a sports_balls variable with all values being NA for row combining later
+         which_wheel = "prof") # create a new variable to note that these dumpsters are from professor trash wheel
 
 
 prof_trash_wheel_sheet
 ```
 
-Before combining the two datasets by rows, we check the names and data types of the columns of the two datasets:
-```{r}
-# the datasets have the same column names if there sets of column names contain each other
-FALSE %in% (names(mr_trash_wheel_sheet) %in% names(prof_trash_wheel_sheet))
-FALSE %in% (names(prof_trash_wheel_sheet) %in% names(mr_trash_wheel_sheet))
-```
-We can see from the checks above that the two datasets inded have the same column names.  
-
-Nest, we check if the variables in the two datasets have the same data type before merging:
+Before combining the two datasets by rows, we check the data types of the columns of the two datasets:
 ```{r}
 glimpse(mr_trash_wheel_sheet)
 glimpse(prof_trash_wheel_sheet)
 ```
-We found an inconsistency where in the first dataset, the dumpster variable was encoded as a character, while in the second dataset, the dumpster variable was ended as a double. We convert the dumpster variable in the first dataset into a double:
+We found an inconsistency where in the first dataset, the year variable was encoded as a character, while in the second dataset, the year variable was ended as a double. We convert the year variable in the first dataset into a double:
 ```{r}
-mr_trash_wheel_sheet = mr_trash_wheel_sheet %>% mutate(dumpster = as.numeric(dumpster))
+mr_trash_wheel_sheet = mr_trash_wheel_sheet %>% mutate(year = as.numeric(year))
 ```
 
 Then we combine the two datasets together into one:
@@ -135,7 +127,7 @@ Then we combine the two datasets together into one:
 wheel_tidy = bind_rows(mr_trash_wheel_sheet, prof_trash_wheel_sheet)
 wheel_tidy
 ```
-Here is a summary of the merged dataset: It has `r nrow(wheel_tidy)` observations and `r ncol(wheel_tidy)` variables. The variables include the attributes of the trash collected by each dumpster in Mr. Trash Wheel and Professor Trash Wheel. These attributes include weight in tons, volume in cubic yards, number of plastic bottles collected, number of polystyrene containers collected, number of cigarette butts collected, number of glass bottles collected, number of grocery bags collected, number of chip bags collected, number of sports balls collected, and number of homes powered by the trash collected by the dumpster on the recorded date. The recorded dates for dumpsters in Mr. Trash Wheel ranges from `r wheel_tidy %>% filter(which_wheel=="mr") %>% slice_head() %>% select(date) ` to `r wheel_tidy %>% filter(which_wheel=="mr") %>% slice_tail() %>% select(date)`, while for Professor Trash Wheel, they range from `r wheel_tidy %>% filter(which_wheel=="prof") %>% slice_head() %>% select(date)` to `r wheel_tidy %>% filter(which_wheel=="prof") %>% slice_tail() %>% select(date)`. 
+Here is a summary of the merged dataset: It has `r nrow(wheel_tidy)` observations and `r ncol(wheel_tidy)` variables. The variables include the attributes of the trash collected by each dumpster in Mr. Trash Wheel and Professor Trash Wheel. These attributes include weight in tons, volume in cubic yards, number of plastic bottles collected, number of polystyrene containers collected, number of cigarette butts collected, number of glass bottles collected, number of grocery bags collected, number of chip bags collected, number of sports balls collected (only aailable for Mr. Trash Wheel in the updated dataset), and number of homes powered by the trash collected by the dumpster on the recorded date. The recorded dates for dumpsters in Mr. Trash Wheel ranges from `r wheel_tidy %>% filter(which_wheel=="mr") %>% slice_head() %>% select(date) ` to `r wheel_tidy %>% filter(which_wheel=="mr") %>% slice_tail() %>% select(date)`, while for Professor Trash Wheel, they range from `r wheel_tidy %>% filter(which_wheel=="prof") %>% slice_head() %>% select(date)` to `r wheel_tidy %>% filter(which_wheel=="prof") %>% slice_tail() %>% select(date)`. 
 
 For the available data, Professor Trash Wheel collected `r wheel_tidy %>% filter(which_wheel=="prof") %>% summarize(sum(weight_tons))` tons of trash in total. In 2020, Mr. Trash Wheel collected `r wheel_tidy %>% filter(which_wheel=="mr", year==2020) %>% summarize(sum(sports_balls))` sports balls in total. 
 

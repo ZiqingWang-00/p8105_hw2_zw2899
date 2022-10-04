@@ -166,48 +166,49 @@ trans_ent %>%
 First, we import and clean the Mr. Trash Wheel dataset:
 
 ``` r
-mr_trash_wheel_sheet = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+mr_trash_wheel_sheet = read_excel("data/TrashWheelCollectionData.xlsx", 
                             sheet = "Mr. Trash Wheel", skip = 1) %>% # skip the row that contains figure
   janitor::clean_names() %>%
   drop_na(c("dumpster")) %>% # drop the rows that computes monthly totals
   slice(1:(n()-1)) %>% # drop the last row, which computes the grand total
-  select(-c(x15, x16, x17))%>%# drop the columns that contain notes
+  select(-c(x15, x16))%>% # drop the columns that are blank
   mutate(sports_balls = as.integer(sports_balls),
          which_wheel = "mr") # round sports balls to the nearest integer and create new variable to note the dumpsters are from mr. trash wheel 
 
 mr_trash_wheel_sheet
-## # A tibble: 453 × 15
-##    dumpster month  year date                weight_tons volume…¹ plast…² polys…³
-##    <chr>    <chr> <dbl> <dttm>                    <dbl>    <dbl>   <dbl>   <dbl>
-##  1 1        May    2014 2014-05-16 00:00:00        4.31       18    1450    1820
-##  2 2        May    2014 2014-05-16 00:00:00        2.74       13    1120    1030
-##  3 3        May    2014 2014-05-16 00:00:00        3.45       15    2450    3100
-##  4 4        May    2014 2014-05-17 00:00:00        3.1        15    2380    2730
-##  5 5        May    2014 2014-05-17 00:00:00        4.06       18     980     870
-##  6 6        May    2014 2014-05-20 00:00:00        2.71       13    1430    2140
-##  7 7        May    2014 2014-05-21 00:00:00        1.91        8     910    1090
-##  8 8        May    2014 2014-05-28 00:00:00        3.7        16    3580    4310
-##  9 9        June   2014 2014-06-05 00:00:00        2.52       14    2400    2790
-## 10 10       June   2014 2014-06-11 00:00:00        3.76       18    1340    1730
-## # … with 443 more rows, 7 more variables: cigarette_butts <dbl>,
+## # A tibble: 546 × 15
+##    dumpster month year  date                weight_tons volume…¹ plast…² polys…³
+##       <dbl> <chr> <chr> <dttm>                    <dbl>    <dbl>   <dbl>   <dbl>
+##  1        1 May   2014  2014-05-16 00:00:00        4.31       18    1450    1820
+##  2        2 May   2014  2014-05-16 00:00:00        2.74       13    1120    1030
+##  3        3 May   2014  2014-05-16 00:00:00        3.45       15    2450    3100
+##  4        4 May   2014  2014-05-17 00:00:00        3.1        15    2380    2730
+##  5        5 May   2014  2014-05-17 00:00:00        4.06       18     980     870
+##  6        6 May   2014  2014-05-20 00:00:00        2.71       13    1430    2140
+##  7        7 May   2014  2014-05-21 00:00:00        1.91        8     910    1090
+##  8        8 May   2014  2014-05-28 00:00:00        3.7        16    3580    4310
+##  9        9 June  2014  2014-06-05 00:00:00        2.52       14    2400    2790
+## 10       10 June  2014  2014-06-11 00:00:00        3.76       18    1340    1730
+## # … with 536 more rows, 7 more variables: cigarette_butts <dbl>,
 ## #   glass_bottles <dbl>, grocery_bags <dbl>, chip_bags <dbl>,
 ## #   sports_balls <int>, homes_powered <dbl>, which_wheel <chr>, and abbreviated
 ## #   variable names ¹​volume_cubic_yards, ²​plastic_bottles, ³​polystyrene
 ```
 
-Next, we import and clean the Professor Trash Wheel data:
+Next, we import and clean the Professor Trash Wheel data (there is no
+sports ball variable in this sheet in the updated dataset):
 
 ``` r
-prof_trash_wheel_sheet = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+prof_trash_wheel_sheet = read_excel("data/TrashWheelCollectionData.xlsx", 
                             sheet = "Professor Trash Wheel", skip = 1) %>%  # skip the row that contains figure
   janitor::clean_names() %>%
   drop_na(c("dumpster")) %>% # drop the rows that computes monthly/grand totals
-  mutate(sports_balls = as.integer(sports_balls),
-         which_wheel = "prof") # round sports balls to the nearest integer and create a new variable to note that these dumpsters are from professor trash wheel
+  mutate(sports_balls = NA, # create a sports_balls variable with all values being NA for row combining later
+         which_wheel = "prof") # create a new variable to note that these dumpsters are from professor trash wheel
 
 
 prof_trash_wheel_sheet
-## # A tibble: 71 × 15
+## # A tibble: 94 × 15
 ##    dumpster month     year date                weight_…¹ volum…² plast…³ polys…⁴
 ##       <dbl> <chr>    <dbl> <dttm>                  <dbl>   <dbl>   <dbl>   <dbl>
 ##  1        1 January   2017 2017-01-02 00:00:00      1.79      15    1950    6080
@@ -220,37 +221,23 @@ prof_trash_wheel_sheet
 ##  8        8 April     2017 2017-04-20 00:00:00      2.37      15    9240    8760
 ##  9        9 May       2017 2017-05-10 00:00:00      2.64      15    9540    8810
 ## 10       10 May       2017 2017-05-26 00:00:00      2.78      15    8230    7800
-## # … with 61 more rows, 7 more variables: cigarette_butts <dbl>,
+## # … with 84 more rows, 7 more variables: cigarette_butts <dbl>,
 ## #   glass_bottles <dbl>, grocery_bags <dbl>, chip_bags <dbl>,
-## #   sports_balls <int>, homes_powered <dbl>, which_wheel <chr>, and abbreviated
+## #   homes_powered <dbl>, sports_balls <lgl>, which_wheel <chr>, and abbreviated
 ## #   variable names ¹​weight_tons, ²​volume_cubic_yards, ³​plastic_bottles,
 ## #   ⁴​polystyrene
 ```
 
-Before combining the two datasets by rows, we check the names and data
-types of the columns of the two datasets:
-
-``` r
-# the datasets have the same column names if there sets of column names contain each other
-FALSE %in% (names(mr_trash_wheel_sheet) %in% names(prof_trash_wheel_sheet))
-## [1] FALSE
-FALSE %in% (names(prof_trash_wheel_sheet) %in% names(mr_trash_wheel_sheet))
-## [1] FALSE
-```
-
-We can see from the checks above that the two datasets inded have the
-same column names.
-
-Nest, we check if the variables in the two datasets have the same data
-type before merging:
+Before combining the two datasets by rows, we check the data types of
+the columns of the two datasets:
 
 ``` r
 glimpse(mr_trash_wheel_sheet)
-## Rows: 453
+## Rows: 546
 ## Columns: 15
-## $ dumpster           <chr> "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", …
+## $ dumpster           <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, …
 ## $ month              <chr> "May", "May", "May", "May", "May", "May", "May", "M…
-## $ year               <dbl> 2014, 2014, 2014, 2014, 2014, 2014, 2014, 2014, 201…
+## $ year               <chr> "2014", "2014", "2014", "2014", "2014", "2014", "20…
 ## $ date               <dttm> 2014-05-16, 2014-05-16, 2014-05-16, 2014-05-17, 20…
 ## $ weight_tons        <dbl> 4.31, 2.74, 3.45, 3.10, 4.06, 2.71, 1.91, 3.70, 2.5…
 ## $ volume_cubic_yards <dbl> 18, 13, 15, 15, 18, 13, 8, 16, 14, 18, 15, 19, 15, …
@@ -264,7 +251,7 @@ glimpse(mr_trash_wheel_sheet)
 ## $ homes_powered      <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
 ## $ which_wheel        <chr> "mr", "mr", "mr", "mr", "mr", "mr", "mr", "mr", "mr…
 glimpse(prof_trash_wheel_sheet)
-## Rows: 71
+## Rows: 94
 ## Columns: 15
 ## $ dumpster           <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, …
 ## $ month              <chr> "January", "January", "February", "February", "Febr…
@@ -278,18 +265,18 @@ glimpse(prof_trash_wheel_sheet)
 ## $ glass_bottles      <dbl> 8, 14, 19, 21, 18, 23, 26, 14, 28, 22, 12, 24, 27, …
 ## $ grocery_bags       <dbl> 3100, 5630, 6430, 5870, 7450, 9560, 11500, 9970, 12…
 ## $ chip_bags          <dbl> 15600, 16700, 12400, 11030, 15340, 13470, 18620, 14…
-## $ sports_balls       <int> 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
 ## $ homes_powered      <dbl> 29.83333, 26.33333, 38.66667, 62.00000, 24.16667, 2…
+## $ sports_balls       <lgl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
 ## $ which_wheel        <chr> "prof", "prof", "prof", "prof", "prof", "prof", "pr…
 ```
 
-We found an inconsistency where in the first dataset, the dumpster
-variable was encoded as a character, while in the second dataset, the
-dumpster variable was ended as a double. We convert the dumpster
-variable in the first dataset into a double:
+We found an inconsistency where in the first dataset, the year variable
+was encoded as a character, while in the second dataset, the year
+variable was ended as a double. We convert the year variable in the
+first dataset into a double:
 
 ``` r
-mr_trash_wheel_sheet = mr_trash_wheel_sheet %>% mutate(dumpster = as.numeric(dumpster))
+mr_trash_wheel_sheet = mr_trash_wheel_sheet %>% mutate(year = as.numeric(year))
 ```
 
 Then we combine the two datasets together into one:
@@ -297,7 +284,7 @@ Then we combine the two datasets together into one:
 ``` r
 wheel_tidy = bind_rows(mr_trash_wheel_sheet, prof_trash_wheel_sheet)
 wheel_tidy
-## # A tibble: 524 × 15
+## # A tibble: 640 × 15
 ##    dumpster month  year date                weight_tons volume…¹ plast…² polys…³
 ##       <dbl> <chr> <dbl> <dttm>                    <dbl>    <dbl>   <dbl>   <dbl>
 ##  1        1 May    2014 2014-05-16 00:00:00        4.31       18    1450    1820
@@ -310,25 +297,26 @@ wheel_tidy
 ##  8        8 May    2014 2014-05-28 00:00:00        3.7        16    3580    4310
 ##  9        9 June   2014 2014-06-05 00:00:00        2.52       14    2400    2790
 ## 10       10 June   2014 2014-06-11 00:00:00        3.76       18    1340    1730
-## # … with 514 more rows, 7 more variables: cigarette_butts <dbl>,
+## # … with 630 more rows, 7 more variables: cigarette_butts <dbl>,
 ## #   glass_bottles <dbl>, grocery_bags <dbl>, chip_bags <dbl>,
 ## #   sports_balls <int>, homes_powered <dbl>, which_wheel <chr>, and abbreviated
 ## #   variable names ¹​volume_cubic_yards, ²​plastic_bottles, ³​polystyrene
 ```
 
-Here is a summary of the merged dataset: It has 524 observations and 15
+Here is a summary of the merged dataset: It has 640 observations and 15
 variables. The variables include the attributes of the trash collected
 by each dumpster in Mr. Trash Wheel and Professor Trash Wheel. These
 attributes include weight in tons, volume in cubic yards, number of
 plastic bottles collected, number of polystyrene containers collected,
 number of cigarette butts collected, number of glass bottles collected,
 number of grocery bags collected, number of chip bags collected, number
-of sports balls collected, and number of homes powered by the trash
-collected by the dumpster on the recorded date. The recorded dates for
-dumpsters in Mr. Trash Wheel ranges from 2014-05-16 to 2021-01-04, while
-for Professor Trash Wheel, they range from 2017-01-02 to 2021-01-04.
+of sports balls collected (only aailable for Mr. Trash Wheel in the
+updated dataset), and number of homes powered by the trash collected by
+the dumpster on the recorded date. The recorded dates for dumpsters in
+Mr. Trash Wheel ranges from 2014-05-16 to 2022-07-27, while for
+Professor Trash Wheel, they range from 2017-01-02 to 2022-07-18.
 
-For the available data, Professor Trash Wheel collected 135.5 tons of
+For the available data, Professor Trash Wheel collected 190.12 tons of
 trash in total. In 2020, Mr. Trash Wheel collected 856 sports balls in
 total.
 
